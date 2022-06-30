@@ -1,19 +1,45 @@
+from time import time
 from utils import *
 
-def gen3d(mol, n_conf):
+def gen3d(mol: rdkit.Chem.rdchem.Mol, n_conf: int) -> pd.DataFrame:
+    '''
+    Generate 3D conformers for a molecule.
+    -----------------------------------------------------------------
+    Parameters:
+    mol: rdkit.Chem.rdchem.Mol
+        molecule to generate 3D conformers for
+    n_conf: int
+        number of 3D conformers to generate
+    -----------------------------------------------------------------
+    Returns:
+    df: pd.DataFrame
+        dataframe with 3D conformers
+    '''
     m = Chem.AddHs(mol)   
     df = pd.DataFrame({'3DBlock': [], 'ROMol': []})
     
     for i in range(n_conf):
         AllChem.EmbedMolecule(m)
+        #AllChem.MMFFOptimizeMolecule(m, maxIters=200)
         block = Chem.MolToMolBlock(m)
         df = df.append({'ROMol': Chem.MolFromMolBlock(block)}, ignore_index=True)
     return df
 
 
 def iterSDF(sdf: str, n_conf=1) -> pd.DataFrame:
-
-    #assert "Check extension file"
+    '''
+    It will generate 3D conformers for each molecule in the sdf file.
+    -----------------------------------------------------------------
+    Parameters:
+    sdf: str
+        path to the sdf file
+    n_conf: int
+        number of 3D conformers to generate
+    -----------------------------------------------------------------
+    Returns:
+    df: pd.DataFrame
+        dataframe with "n_conf" x 3D conformers for each molecule
+    '''
     
     #from sdf to pd.DataFrame
     sdf = PandasTools.LoadSDF(sdf, molColName='ROMol')
@@ -22,10 +48,10 @@ def iterSDF(sdf: str, n_conf=1) -> pd.DataFrame:
     dfs = list()
 
     # iterate over all molecules in sdf
-    for index, row in tqdm(sdf.iterrows(), total=sdf.shape[0]):
+    for index, row in sdf.iterrows():
         curr_mol_df = pd.DataFrame([row.to_dict()])
 
-        for i in range(n_conf):
+        for i in tqdm(range(n_conf), total=n_conf):
             name = f"conf{i}"
             mol = row['ROMol']
             currdf = gen3d(mol, n_conf)
@@ -37,42 +63,65 @@ def iterSDF(sdf: str, n_conf=1) -> pd.DataFrame:
     return new_dfs
         
 
-# def main():
-#     m = Chem.MolFromSmiles('CCO[C@H]1CCN([C@@H](C1)C2=CC=C(C=C2)C(=O)O)CC3=C(C=C(C4=C3C=CN4)C)OC')    
-#     df = gen3d(m, n_conf=10)
-#     Chem.PandasTools.WriteSDF(df, 'test_conf.sdf', molColName='ROMol', properties=list(df.columns))
-
+@timeit
 def main():
 
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=textwrap.dedent('''\
+            Generate 3D conformers for a molecule
+            =====================================
+                Usage: $ python3 Gen3dConformers.py (-s <smi> or -sd <sdf>) -o <output> -n <number of conformers>
+        '''),
+        formatter_class=argparse.RawTextHelpFormatter
+    )
     parser.add_argument("-s", "--smi", action="store", dest="smi")  
     parser.add_argument("-sd", "--sdf", action="store", dest="sdf")
     parser.add_argument("-n", "--nconf", action="store", dest="nconf", default=1)
     parser.add_argument("-o", "--out", action="store", dest="out")
     args = parser.parse_args()
 
-    assert args.sdf and not args.smi, "Please, enter just ONE input file."
 
-    if args.sdf:
-        assert (path_Extension(args.sdf) in ('.sdf','.sd')), "Wrong input file type (.sdf, .sd)."
-        file = args.sdf
-        n_conf = int(args.nconf)
-        df = iterSDF(file, n_conf)
-        if not args.out:
-            out = os.path.basename(args.sdf).split('.')[0]
-        else:
-            out = args.out
-        Chem.PandasTools.WriteSDF(df, out, molColName='ROMol', properties=list(df.columns))
+    if not args.smi and not args.sdf:
+        parser.print_help()
+        sys.exit(1)
+    
+    else:
+
+        assert ((args.sdf and not args.smi) or (args.smi and not args.sdf)), "Please, enter just ONE input file."
+
+        if args.sdf:
+            file = args.sdf
+            assert (path_Extension(file) in ('.sdf','.sd')), "Wrong input file type (.sdf, .sd)."
+            assert (os.path.exists(file)), "Input file does not exist."
+
+            n_conf = int(args.nconf)
+            df = iterSDF(file, n_conf)
+
+            if not args.out:
+                out = os.path.basename(args.sdf).split('.')[0]+'_conf.sdf'
+            else:
+                out = args.out
+            Chem.PandasTools.WriteSDF(df, out, molColName='ROMol', properties=list(df.columns))
+
+        elif args.smi:
+            file = args.smi
+            assert (path_Extension(file) in ('.smi','.smile', '.smiles')), "Wrong input file type (.smi, .smile, .smiles)."
+            assert (os.path.exists(file)), "Input file does not exist."
+
+            n_conf = int(args.nconf)
+            df = iterSDF(file, n_conf)
+
+            if not args.out:
+                out = os.path.basename(file).split('.')[0]
+            else:
+                out = args.out
+            Chem.PandasTools.WriteSDF(df, out, molColName='ROMol', properties=list(df.columns))
 
 
-    #file = '/chemotargets/research/SITALA/IPTACOPAN/docking_rDock/Chembl/best_unique.sdf'
-    #dfs = iterSDF(file, n_conf=n_conf)
-    #Chem.PandasTools.WriteSDF(dfs, 'test_conf.sdf', molColName='ROMol', properties=list(dfs.columns))
+if __name__ == '__main__':
+    main()
 
-
-#if __name__ == '__main__':
-#    main()
     
 
 

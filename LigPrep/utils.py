@@ -9,21 +9,21 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 from timeit import default_timer as timer
 from datetime import timedelta
+import textwrap
 
 import pandas as pd
 
 from tqdm import tqdm
 
-from rhea.db import zinc20
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import PandasTools
 from rdkit.Chem import Draw 
-from rdkit.Chem.Draw import IPythonConsole
+#from rdkit.Chem.Draw import IPythonConsole
 from rdkit.Chem import rdMolDescriptors
 from rdkit import DataStructs
-IPythonConsole.ipython_useSVG = True
-IPythonConsole.molSize = (400, 400)
+#IPythonConsole.ipython_useSVG = True
+#IPythonConsole.molSize = (400, 400)
 
 
 def path_Extension(path):
@@ -41,3 +41,21 @@ def listPath( path=os.getcwd(), extension=''):
         if file.endswith(extension) and file.startswith('out'):
             res.append(file)
     return res
+
+def extractMolFromSDFById(sdf: str, id: str) -> pd.DataFrame:
+    # extract molecule from sdf by id
+    sdf = PandasTools.LoadSDF(sdf, molColName='ROMol')
+    moldf = sdf[sdf['ID'] == id]
+    return moldf
+
+
+#function decorator to measure elapsed time
+def timeit(func):
+    def timed(*args, **kwargs):
+        start = timer()
+        print(f"Start time: {start}")
+        result = func(*args, **kwargs)
+        end = timer()
+        print(f"{func.__name__} took {timedelta(seconds=end-start)}")
+        return result
+    return timed
