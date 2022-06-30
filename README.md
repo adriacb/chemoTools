@@ -1,6 +1,6 @@
 
 ---
-# project_name
+# ChemoTools
 
 [![codecov](https://codecov.io/gh/author_name/project_urlname/branch/main/graph/badge.svg?token=project_urlname_token_here)](https://codecov.io/gh/author_name/project_urlname)
 
