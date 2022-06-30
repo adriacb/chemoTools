@@ -7,16 +7,18 @@
 
 A set of tools for Chemoinformatics.
 
-## Install it from PyPI
+## Install it from Conda
 
 ```bash
-conda env create -f environment.yml
+# bash
+$ conda env create -f environment.yml
 
-conda activate <env_name>
+$ conda activate <env_name>
 ```
 
 ```py
-pip install {TO DO}
+# python
+(env_name) $ pip install {TO DO}
 ```
 
 ## Usage
