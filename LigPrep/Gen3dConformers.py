@@ -21,7 +21,7 @@ def iterSDF(sdf: str, n_conf=1) -> pd.DataFrame:
     # empty list to store all de dataframes
     dfs = list()
 
-
+    # iterate over all molecules in sdf
     for index, row in tqdm(sdf.iterrows(), total=sdf.shape[0]):
         curr_mol_df = pd.DataFrame([row.to_dict()])
 
@@ -43,13 +43,36 @@ def iterSDF(sdf: str, n_conf=1) -> pd.DataFrame:
 #     Chem.PandasTools.WriteSDF(df, 'test_conf.sdf', molColName='ROMol', properties=list(df.columns))
 
 def main():
-    file = '/chemotargets/research/SITALA/IPTACOPAN/docking_rDock/Chembl/best_unique.sdf'
-    dfs = iterSDF(file, n_conf=10)
-    Chem.PandasTools.WriteSDF(dfs, 'test_conf.sdf', molColName='ROMol', properties=list(dfs.columns))
 
 
-if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-s", "--smi", action="store", dest="smi")  
+    parser.add_argument("-sd", "--sdf", action="store", dest="sdf")
+    parser.add_argument("-n", "--nconf", action="store", dest="nconf", default=1)
+    parser.add_argument("-o", "--out", action="store", dest="out")
+    args = parser.parse_args()
+
+    assert args.sdf and not args.smi, "Please, enter just ONE input file."
+
+    if args.sdf:
+        assert (path_Extension(args.sdf) in ('.sdf','.sd')), "Wrong input file type (.sdf, .sd)."
+        file = args.sdf
+        n_conf = int(args.nconf)
+        df = iterSDF(file, n_conf)
+        if not args.out:
+            out = os.path.basename(args.sdf).split('.')[0]
+        else:
+            out = args.out
+        Chem.PandasTools.WriteSDF(df, out, molColName='ROMol', properties=list(df.columns))
+
+
+    #file = '/chemotargets/research/SITALA/IPTACOPAN/docking_rDock/Chembl/best_unique.sdf'
+    #dfs = iterSDF(file, n_conf=n_conf)
+    #Chem.PandasTools.WriteSDF(dfs, 'test_conf.sdf', molColName='ROMol', properties=list(dfs.columns))
+
+
+#if __name__ == '__main__':
+#    main()
     
 
 

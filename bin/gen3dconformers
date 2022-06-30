@@ -1,3 +1,3 @@
-#!/usr/bin/env python
-from LigPrep import Gen3dConformers
+#!/usr/bin/env python3
+from ..LigPrep import Gen3dConformers
 Gen3dConformers.main()
