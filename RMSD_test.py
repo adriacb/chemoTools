@@ -8,7 +8,8 @@ ref, = [m for m in Molecules(infile="/chemotargets/research/SITALA/IPTACOPAN/ste
 print(ref)
 
 
-df = PandasTools.LoadSDF("/chemotargets/research/SITALA/IPTACOPAN/docking_rDock/RefLig/ref_lig.sdf")
+df = PandasTools.LoadSDF("/chemotargets/research/SITALA/IPTACOPAN/docking_rDock/Chembl/CHEMBL4594448/docked_sorted.sdf")
 df["rmsd"] = df.apply(lambda row: Molecule(row["ROMol"]).rmsd(ref.molecule), axis=1)
 df = df.sort_values("rmsd")
+#Chem.PandasTools.WriteSDF(df, "/chemotargets/research/SITALA/IPTACOPAN/docking_rDock/Chembl/CHEMBL4594448/bestRMSD.sdf", molColName='ROMol', properties=list(df.columns))
 df.head()
