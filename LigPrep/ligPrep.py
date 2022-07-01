@@ -14,6 +14,10 @@ def gen3d(mol: Chem.rdchem.Mol, n_conf: int) -> pd.DataFrame:
     Returns:
     df: pd.DataFrame
         dataframe with 3D conformers
+
+
+        Based on:
+        https://iwatobipen.wordpress.com/2021/01/31/generate-conformers-script-with-rdkit-rdkit-chemoinformatics/ 
     '''
     m = Chem.AddHs(mol, addCoords=True)
     refmol = Chem.AddHs(Chem.Mol(m))   
@@ -39,6 +43,54 @@ def gen3d(mol: Chem.rdchem.Mol, n_conf: int) -> pd.DataFrame:
 
     return df
 
+
+def iterSMILES(smiles: str, n_conf=1) -> pd.DataFrame:
+    '''
+    It will generate 3D conformers for each molecule in the sdf file.
+    -----------------------------------------------------------------
+    Parameters:
+    sdf: str
+        path to the smi file
+    n_conf: int
+        number of 3D conformers to generate
+    -----------------------------------------------------------------
+    Returns:
+    df: pd.DataFrame
+        dataframe with "n_conf" x 3D conformers for each molecule
+    '''
+    
+    df = pd.DataFrame({'ROMol': [], 'Smile': [], 'Name': []})
+    
+    with open(smiles) as f:
+        for line in f:
+            line = line.split()
+            
+            if len(line) == 1:
+                assert Chem.MolFromSmiles(line[0], sanitize=False) is not None, f"Cannot convert {line[0]} to SMILES."
+                mol = Chem.MolFromSmiles(line[0])
+                df = df.append({'ROMol': mol, 'Smile': line, 'Name': ''}, ignore_index=True)
+            if len(line) == 2:
+
+                assert Chem.MolFromSmiles(line[0], sanitize=False) is not None, f"Cannot convert {line[0]} to SMILES."
+                mol = Chem.MolFromSmiles(line[0])
+                df = df.append({'ROMol': mol, 'Smile': line[0], 'Name': line[1]}, ignore_index=True)
+
+    # empty list to store all de dataframes
+    dfs = list()
+
+    # iterate over all molecules in sdf
+    for index, row in df.iterrows():
+        curr_mol_df = pd.DataFrame([row.to_dict()])
+        currdf = gen3d( row['ROMol'], n_conf)
+
+        # add the previous properties to the current dataframe
+        for index, row2 in currdf.iterrows():
+            to_add = pd.concat([pd.DataFrame([row2.to_dict()]), curr_mol_df.loc[:, curr_mol_df.columns != 'ROMol']], axis=1)
+            dfs.append(to_add)
+
+    # concat all the molecules in one dataframe
+    new_dfs = pd.concat(dfs)
+    return new_dfs
 
 def iterSDF(sdf: str, n_conf=1) -> pd.DataFrame:
     '''
@@ -66,41 +118,16 @@ def iterSDF(sdf: str, n_conf=1) -> pd.DataFrame:
         curr_mol_df = pd.DataFrame([row.to_dict()])
         currdf = gen3d( row['ROMol'], n_conf)
 
-        for index, row in currdf.iterrows():
-            to_add = pd.concat([pd.DataFrame([row.to_dict()]), curr_mol_df.loc[:, curr_mol_df.columns != 'ROMol']], axis=1)
+        # add the previous properties to the current dataframe
+        for index, row2 in currdf.iterrows():
+            to_add = pd.concat([pd.DataFrame([row2.to_dict()]), curr_mol_df.loc[:, curr_mol_df.columns != 'ROMol']], axis=1)
             dfs.append(to_add)
-    
+
+    # concat all the molecules in one dataframe
     new_dfs = pd.concat(dfs)
     return new_dfs
         
 
-
-def iterSMILES(smi: str, n_conf=1) -> pd.DataFrame:
-    '''
-    It will generate 3D conformers for each molecule in the smi file.
-    -----------------------------------------------------------------
-    Parameters:
-    smi: str
-        path to the smi file
-    n_conf: int
-        number of 3D conformers to generate
-    -----------------------------------------------------------------
-    Returns:
-    df: pd.DataFrame
-        dataframe with "n_conf" x 3D conformers for each molecule
-    '''
-
-    df = pd.DataFrame({'SMILES': [], 'ROMol': [], 'conforer_id': []})
-
-    #iterate over smiles
-    for smile in smi:
-        #for each smile, generate n_conf conformers
-        for i in tqdm(range(n_conf), total=n_conf):
-            name = f"conf{i}"
-            mol = Chem.MolFromSmiles(smile)
-            currdf = gen3d(mol, n_conf)
-            df = df.append({'ROMol': currdf['ROMol'], 'conformer_id': name}, ignore_index=True)
-      
 
 
 
@@ -151,7 +178,7 @@ def main():
             assert (os.path.exists(file)), "Input file does not exist."
 
             n_conf = int(args.nconf)
-            df = iterSDF(file, n_conf)
+            df = iterSMILES(file, n_conf)
 
             if not args.out:
                 out = os.path.basename(file).split('.')[0]
