@@ -1,7 +1,7 @@
 from time import time
 from utils import *
 
-def gen3d(mol: rdkit.Chem.rdchem.Mol, n_conf: int) -> pd.DataFrame:
+def gen3d(mol: Chem.rdchem.Mol, n_conf: int) -> pd.DataFrame:
     '''
     Generate 3D conformers for a molecule.
     -----------------------------------------------------------------
@@ -15,14 +15,28 @@ def gen3d(mol: rdkit.Chem.rdchem.Mol, n_conf: int) -> pd.DataFrame:
     df: pd.DataFrame
         dataframe with 3D conformers
     '''
-    m = Chem.AddHs(mol)   
-    df = pd.DataFrame({'ROMol': []})
+    m = Chem.AddHs(mol, addCoords=True)
+    refmol = Chem.AddHs(Chem.Mol(m))   
+    df = pd.DataFrame({'ROMol': [], 'Energy': [], 'CID': []})
     
-    for i in range(n_conf):
-        AllChem.EmbedMolecule(m)
-        #AllChem.MMFFOptimizeMolecule(m, maxIters=200)
-        block = Chem.MolToMolBlock(m)
-        df = df.append({'ROMol': Chem.MolFromMolBlock(block)}, ignore_index=True)
+    p = Chem.rdDistGeom.ETKDGv2()
+    p.pruneRmsThresh = 0.1
+    cids = Chem.rdDistGeom.EmbedMultipleConfs(m, n_conf, p)
+    
+    mp = AllChem.MMFFGetMoleculeProperties(m, mmffVariant='MMFF94s')
+    AllChem.MMFFOptimizeMoleculeConfs(m, numThreads=0, mmffVariant='MMFF94s')
+
+    Chem.rdMolAlign.AlignMolConformers(m)
+    
+    
+    for cid in cids:
+
+        ff = AllChem.MMFFGetMoleculeForceField(m, mp, confId=cid)
+        energy = ff.CalcEnergy()
+        mol = Chem.Mol(refmol, True)
+        mol.AddConformer(m.GetConformer(cid))
+        df = df.append({'ROMol': mol, 'Energy': energy, 'CID': cid}, ignore_index=True)
+
     return df
 
 
@@ -50,14 +64,11 @@ def iterSDF(sdf: str, n_conf=1) -> pd.DataFrame:
     # iterate over all molecules in sdf
     for index, row in sdf.iterrows():
         curr_mol_df = pd.DataFrame([row.to_dict()])
+        currdf = gen3d( row['ROMol'], n_conf)
 
-        for i in tqdm(range(n_conf), total=n_conf):
-            name = f"conf{i}"
-            mol = row['ROMol']
-            currdf = gen3d(mol, n_conf)
-            curr_mol_df['ROMol'] = currdf['ROMol']
-            curr_mol_df['conformer_id'] = name
-            dfs.append(curr_mol_df)
+        for index, row in currdf.iterrows():
+            to_add = pd.concat([pd.DataFrame([row.to_dict()]), curr_mol_df.loc[:, curr_mol_df.columns != 'ROMol']], axis=1)
+            dfs.append(to_add)
     
     new_dfs = pd.concat(dfs)
     return new_dfs
@@ -89,8 +100,7 @@ def iterSMILES(smi: str, n_conf=1) -> pd.DataFrame:
             mol = Chem.MolFromSmiles(smile)
             currdf = gen3d(mol, n_conf)
             df = df.append({'ROMol': currdf['ROMol'], 'conformer_id': name}, ignore_index=True)
-
-        
+      
 
 
 
