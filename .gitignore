@@ -1,3 +1,3 @@
-skip/Gen3d.py
-LigPrep/Gen3d.py
+skip/
 gitPush.sh
+__pycache__
