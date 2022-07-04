@@ -139,7 +139,7 @@ def main():
         description=textwrap.dedent('''\
             Generate 3D conformers for a molecule
             =====================================
-                Usage: $ python3 Gen3dConformers.py (-s <smi> or -sd <sdf>) -o <output> -n <number of conformers>
+                Usage: $ python3 ligPrep.py (-s <smi> or -sd <sdf>) -o <output> -n <number of conformers>
         '''),
         formatter_class=argparse.RawTextHelpFormatter
     )

@@ -27,8 +27,7 @@ def sdfsplit(sdf: pd.DataFrame, n_splits: int) -> list:
     # split dataframe into n_splits dataframes
     for i in range(n_splits):
         dfs.append(sdf.iloc[i::n_splits])
-
-    
+ 
     return dfs
 
 
