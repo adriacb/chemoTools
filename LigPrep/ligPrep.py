@@ -170,7 +170,7 @@ def main():
                 out = os.path.basename(args.sdf).split('.')[0]+'_conf.sdf'
             else:
                 out = args.out
-            Chem.PandasTools.WriteSDF(df, out, molColName='ROMol', properties=list(df.columns))
+
 
         elif args.smi:
             file = args.smi
@@ -181,10 +181,11 @@ def main():
             df = iterSMILES(file, n_conf)
 
             if not args.out:
-                out = os.path.basename(file).split('.')[0]
+                out = os.path.basename(file).split('.')[0]+'_conf.sdf'
             else:
                 out = args.out
-            Chem.PandasTools.WriteSDF(df, out, molColName='ROMol', properties=list(df.columns))
+        
+        Chem.PandasTools.WriteSDF(df, out, molColName='ROMol', properties=list(df.columns))
 
 
 if __name__ == '__main__':
