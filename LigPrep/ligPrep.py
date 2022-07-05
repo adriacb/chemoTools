@@ -15,7 +15,6 @@ def gen3d(mol: Chem.rdchem.Mol, n_conf: int) -> pd.DataFrame:
     df: pd.DataFrame
         dataframe with 3D conformers
 
-
         Based on:
         https://iwatobipen.wordpress.com/2021/01/31/generate-conformers-script-with-rdkit-rdkit-chemoinformatics/ 
     '''
@@ -40,6 +39,8 @@ def gen3d(mol: Chem.rdchem.Mol, n_conf: int) -> pd.DataFrame:
         mol = Chem.Mol(refmol, True)
         mol.AddConformer(m.GetConformer(cid))
         df = df.append({'ROMol': mol, 'Energy': energy, 'CID': cid}, ignore_index=True)
+        df['Name'] = df['Name']+'_{}'.format(int(cid))
+        df['ID'] = df['ID']+'_{}'.format(int(cid))
 
     return df
 
