@@ -18,6 +18,7 @@ def gen3d(mol: Chem.rdchem.Mol, n_conf: int) -> pd.DataFrame:
         Based on:
         https://iwatobipen.wordpress.com/2021/01/31/generate-conformers-script-with-rdkit-rdkit-chemoinformatics/ 
     '''
+    
     m = Chem.AddHs(mol, addCoords=True)
     refmol = Chem.AddHs(Chem.Mol(m))   
     df = pd.DataFrame({'ROMol': [], 'Energy': [], 'CID': []})
@@ -30,8 +31,8 @@ def gen3d(mol: Chem.rdchem.Mol, n_conf: int) -> pd.DataFrame:
     AllChem.MMFFOptimizeMoleculeConfs(m, numThreads=0, mmffVariant='MMFF94s')
 
     Chem.rdMolAlign.AlignMolConformers(m)
-    
-    
+   
+    i = 0
     for cid in cids:
 
         ff = AllChem.MMFFGetMoleculeForceField(m, mp, confId=cid)
@@ -39,13 +40,12 @@ def gen3d(mol: Chem.rdchem.Mol, n_conf: int) -> pd.DataFrame:
         mol = Chem.Mol(refmol, True)
         mol.AddConformer(m.GetConformer(cid))
         df = df.append({'ROMol': mol, 'Energy': energy, 'CID': cid}, ignore_index=True)
-        df['Name'] = df['Name']+'_{}'.format(int(cid))
-        df['ID'] = df['ID']+'_{}'.format(int(cid))
-
+        i += 1
+    
     return df
 
 
-def iterSMILES(smiles: str, n_conf=1) -> pd.DataFrame:
+def iterSMILES(smiles: str, n_conf=1, idCol: str = 'ID') -> pd.DataFrame:
     '''
     It will generate 3D conformers for each molecule in the sdf file.
     -----------------------------------------------------------------
@@ -83,17 +83,18 @@ def iterSMILES(smiles: str, n_conf=1) -> pd.DataFrame:
     for index, row in df.iterrows():
         curr_mol_df = pd.DataFrame([row.to_dict()])
         currdf = gen3d( row['ROMol'], n_conf)
-
+        name = row['ID'] if 'ID' in sdf.columns else str(index)
         # add the previous properties to the current dataframe
-        for index, row2 in currdf.iterrows():
+        for index2, row2 in currdf.iterrows():
             to_add = pd.concat([pd.DataFrame([row2.to_dict()]), curr_mol_df.loc[:, curr_mol_df.columns != 'ROMol']], axis=1)
+            to_add['ID'] = name + '_' + str(index)+str(index2)
             dfs.append(to_add)
 
     # concat all the molecules in one dataframe
     new_dfs = pd.concat(dfs)
     return new_dfs
 
-def iterSDF(sdf: str, n_conf=1) -> pd.DataFrame:
+def iterSDF(sdf: str, n_conf=1, idCol: str = 'ID') -> pd.DataFrame:
     '''
     It will generate 3D conformers for each molecule in the sdf file.
     -----------------------------------------------------------------
@@ -110,7 +111,7 @@ def iterSDF(sdf: str, n_conf=1) -> pd.DataFrame:
     
     #from sdf to pd.DataFrame
     sdf = PandasTools.LoadSDF(sdf, molColName='ROMol')
-    
+
     # empty list to store all de dataframes
     dfs = list()
 
@@ -118,10 +119,11 @@ def iterSDF(sdf: str, n_conf=1) -> pd.DataFrame:
     for index, row in sdf.iterrows():
         curr_mol_df = pd.DataFrame([row.to_dict()])
         currdf = gen3d( row['ROMol'], n_conf)
-
+        name = row['ID'] if 'ID' in sdf.columns else str(index)
         # add the previous properties to the current dataframe
-        for index, row2 in currdf.iterrows():
+        for index2, row2 in currdf.iterrows():
             to_add = pd.concat([pd.DataFrame([row2.to_dict()]), curr_mol_df.loc[:, curr_mol_df.columns != 'ROMol']], axis=1)
+            to_add['ID'] = name + '_' + str(index)+str(index2)
             dfs.append(to_add)
 
     # concat all the molecules in one dataframe
@@ -186,8 +188,19 @@ def main():
             else:
                 out = args.out
         
-        Chem.PandasTools.WriteSDF(df, out, molColName='ROMol', properties=list(df.columns))
+        Chem.PandasTools.WriteSDF(df, out, molColName='ROMol', idName='RowID', properties=list(df.columns))
 
+        if not args.out:
+            os.system(f"python sdfsplit.py --sdf {out} -o {out}_splited -n {len(df)}")
+            os.system(f"cat {out}_splited > prepared.sdf")
+            #os.system("rm -rf *_splited.sdf")
+
+        if args.out:
+            dirout = os.path.dirname(out)
+            os.system(f"python sdfsplit.py --sdf {out} -o {dirout}/split -n {len(df)}")
+            os.system(f"cat {dirout}/split*.sdf > {dirout}/prepared.sdf")
+            #os.system(f"rm {dirout}/split*.sdf")
+            #os.system(f"rm {out}")
 
 if __name__ == '__main__':
     main()
