@@ -41,7 +41,7 @@ def gen3d(mol: Chem.rdchem.Mol, n_conf: int) -> pd.DataFrame:
         mol.AddConformer(m.GetConformer(cid))
         df = df.append({'ROMol': mol, 'Energy': energy, 'CID': cid}, ignore_index=True)
         i += 1
-    
+    print(df)
     return df
 
 
@@ -83,11 +83,11 @@ def iterSMILES(smiles: str, n_conf=1, idCol: str = 'ID') -> pd.DataFrame:
     for index, row in df.iterrows():
         curr_mol_df = pd.DataFrame([row.to_dict()])
         currdf = gen3d( row['ROMol'], n_conf)
-        name = row['ID'] if 'ID' in sdf.columns else str(index)
+        name = row['ID'] if 'ID' in df.columns else str(index)
         # add the previous properties to the current dataframe
         for index2, row2 in currdf.iterrows():
             to_add = pd.concat([pd.DataFrame([row2.to_dict()]), curr_mol_df.loc[:, curr_mol_df.columns != 'ROMol']], axis=1)
-            to_add['ID'] = name + '_' + str(index)+str(index2)
+            to_add['ID'] = name + '_' + str(index)
             dfs.append(to_add)
 
     # concat all the molecules in one dataframe
@@ -111,6 +111,8 @@ def iterSDF(sdf: str, n_conf=1, idCol: str = 'ID') -> pd.DataFrame:
     
     #from sdf to pd.DataFrame
     sdf = PandasTools.LoadSDF(sdf, molColName='ROMol')
+    print(len(sdf['ID'].unique()))
+    print(len(sdf))
 
     # empty list to store all de dataframes
     dfs = list()
@@ -123,11 +125,12 @@ def iterSDF(sdf: str, n_conf=1, idCol: str = 'ID') -> pd.DataFrame:
         # add the previous properties to the current dataframe
         for index2, row2 in currdf.iterrows():
             to_add = pd.concat([pd.DataFrame([row2.to_dict()]), curr_mol_df.loc[:, curr_mol_df.columns != 'ROMol']], axis=1)
-            to_add['ID'] = name + '_' + str(index)+str(index2)
+            to_add['ID'] = name + '_' + str(index)
             dfs.append(to_add)
 
     # concat all the molecules in one dataframe
     new_dfs = pd.concat(dfs)
+    print(new_dfs)
     return new_dfs
         
 
@@ -150,6 +153,7 @@ def main():
     parser.add_argument("-sd", "--sdf", action="store", dest="sdf")
     parser.add_argument("-n", "--nconf", action="store", dest="nconf", default=1)
     parser.add_argument("-o", "--out", action="store", dest="out")
+    parser.add_argument("-m", "--mol", action="store", dest="molColName")
     args = parser.parse_args()
 
 
@@ -188,19 +192,16 @@ def main():
             else:
                 out = args.out
         
-        Chem.PandasTools.WriteSDF(df, out, molColName='ROMol', idName='RowID', properties=list(df.columns))
+        Chem.PandasTools.WriteSDF(df, out, molColName='ROMol', idName='ID', properties=list(df.columns))
+        #SDFWriter2(df, args.out, molColName=args.molColName)
+        #rDockformat(out)
+        path = os.path.dirname(out)
+        print(f"{path}s_{out.split('.')[0]}")
+        os.system(f"python sdfsplit.py -i {out} -o {path}s_{out.split('.')[0]} -n {len(df)}")
+        os.system(f"cat {path}s_{out.split('.')[0]}* > {path}{out}")
+        time.sleep(2)
+        os.system(f"rm {path}s_{out.split('.')[0]}_*.sdf")
 
-        if not args.out:
-            os.system(f"python sdfsplit.py --sdf {out} -o {out}_splited -n {len(df)}")
-            os.system(f"cat {out}_splited > prepared.sdf")
-            #os.system("rm -rf *_splited.sdf")
-
-        if args.out:
-            dirout = os.path.dirname(out)
-            os.system(f"python sdfsplit.py --sdf {out} -o {dirout}/split -n {len(df)}")
-            os.system(f"cat {dirout}/split*.sdf > {dirout}/prepared.sdf")
-            #os.system(f"rm {dirout}/split*.sdf")
-            #os.system(f"rm {out}")
 
 if __name__ == '__main__':
     main()

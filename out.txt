@@ -1,0 +1,4 @@
+O=c1[nH]c(-c2cccc(Cl)c2)cs1	<rdkit.DataStructs.cDataStructs.UIntSparseIntVect object at 0x7f1fee2a5d20>
+Cn1ccc2cc[nH]c2c1=O	<rdkit.DataStructs.cDataStructs.UIntSparseIntVect object at 0x7f1fee2a5d20>
+COC(=O)CC1CC(=O)N(C)C1	<rdkit.DataStructs.cDataStructs.UIntSparseIntVect object at 0x7f1fee2a5d20>
+O=C1C[C@@H](CO)Nc2ccccc2N1	<rdkit.DataStructs.cDataStructs.UIntSparseIntVect object at 0x7f1fee2a5d20>

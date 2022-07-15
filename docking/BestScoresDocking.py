@@ -18,6 +18,7 @@ from rdkit.Chem import PandasTools
 # Plotting
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 def GetBestDockingScores(file, inter, rest, id, out) -> pd.DataFrame:
    
@@ -31,9 +32,11 @@ def GetBestDockingScores(file, inter, rest, id, out) -> pd.DataFrame:
     return SDF
 
 def PlotDistributions(df):
-    bins=len(df)
+    bins = np.histogram_bin_edges(df['SCORE.INTER'], bins='auto')
+    
     sns.histplot(data=df, x="SCORE.INTER", bins=bins)
     plt.show()
+    bins = np.histogram_bin_edges(df['SCORE.RESTR'], bins='auto')
     sns.histplot(data=df, x="SCORE.RESTR", bins=bins)
     plt.show()
 
