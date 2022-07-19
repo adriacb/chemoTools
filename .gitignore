@@ -1,5 +1,3 @@
-skip/
-gitPush.sh
 __pycache__
 setup.cfg
 chem/__pycache__
