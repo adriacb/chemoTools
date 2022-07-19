@@ -1,5 +1,5 @@
-from utils import *
-from Molecules import Molecules
+from chem.utils import *
+from chem.Molecules import Molecules
 
 
 class ChemSpace:
@@ -41,7 +41,6 @@ class ChemSpace:
         self.coordinates = None
         # Store the model 
         self.model = None
-
         self.dataframe = None
 
 
@@ -54,6 +53,8 @@ class ChemSpace:
         current_index = 0
         for molecules in self.hash_space.values():
             length = molecules.num_molecules
+            # print(molecules)
+            # print(f"Current index: {current_index}, length: {length}")
             molecules.coordinates = self.coordinates[np.r_[current_index:length+current_index, :]]
             current_index += length
 
@@ -107,10 +108,11 @@ class ChemSpace:
                 #Standardize data
                 scaler = StandardScaler()
                 descriptors_scaled = scaler.fit_transform(self.properties)
+
             else:
                 descriptors_scaled = scaler.transform(self.properties)
             # Apply selected model to data (PCA, TruncatedSVD, LinearDiscriminantAnalysis).
-            self._coordinates = m.fit_transform(descriptors_scaled)[:,:nComponents]
+            self._coordinates = m.fit_transform(descriptors_scaled)
 
         self.model = m
 
@@ -141,26 +143,25 @@ class ChemSpace:
             The scaler used for dimensionality reduction.
         """
         
-        self.nComponents = nComponents
+        self.nComponents = nComponents if nComponents is not None else self.num_properties
         
 
         if model in ('PCA'):
-            # Standardize data
-            scaler = StandardScaler()
-            descriptors_scaled = scaler.fit_transform(self.properties)
+            if scaler is None:
+                #Standardize data
+                scaler = StandardScaler()
+                descriptors_scaled = scaler.fit_transform(self.properties)
+            else:
+                descriptors_scaled = scaler.transform(self.properties)
 
             # Apply selected model to data (PCA).
-            m = PCA(n_components=self.nComponents, copy=copy, whiten=whiten, svd_solver=svd_solver, tol=tol, 
+            self.model = PCA(n_components=self.nComponents, copy=copy, whiten=whiten, svd_solver=svd_solver, tol=tol, 
             iterated_power=iterated_power, n_oversamples=n_oversamples, power_iteration_normalizer=power_iteration_normalizer, 
             random_state=random_state) 
 
-            print("Applying PCA model...")
-            self.coordinates = m.fit_transform(descriptors_scaled)[:,:nComponents]
-            print(f"Number of components: {self.coordinates.shape[1]}")
-
         else:
             assert type(model) in (PCA), "Enter a pretrainded PCA model."
-            m = model
+            self.model = model
             if scaler is None:
                 #Standardize data
                 scaler = StandardScaler()
@@ -168,16 +169,17 @@ class ChemSpace:
             
             else:
                 descriptors_scaled = scaler.transform(self.properties)
+            
+        print("Applying PCA model...")
+        self.coordinates = self.model.fit_transform(descriptors_scaled)[:,:nComponents]
 
-            # Apply selected model to data (PCA, TruncatedSVD, LinearDiscriminantAnalysis).
-            self._coordinates = m.fit_transform(descriptors_scaled)[:,:nComponents]
+        print("{}% variance explained with {} components".format(np.round(np.sum(self.model.explained_variance_ratio_[:self.nComponents]), 3)*100, self.nComponents ) )
 
-        # Store the model
-        self.model = m
+        plot_explained_variance(self.model, self.nComponents)
         # Store the PCA coordinates in the Molecules objects
         self._store_pc_coordinates()
 
-        return self.coordinates, self.model, scaler
+        return self.coordinates, self.model, scaler #, explained_variance
 
     def __str__(self):
         

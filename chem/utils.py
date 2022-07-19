@@ -104,3 +104,14 @@ def plot_distances(df: pd.DataFrame, ref_region: str=None, filename: str=None):
     plt.show()
 
 
+def plot_explained_variance(pca, dims):
+
+    plt.bar(range(1,dims+1), pca.explained_variance_ratio_,
+            alpha=0.5,
+            align='center')
+    plt.step(range(1,dims+1), np.cumsum(pca.explained_variance_ratio_),
+            where='mid',
+            color='red')
+    plt.ylabel('Explained variance ratio')
+    plt.xlabel('Principal Components')
+    plt.show()

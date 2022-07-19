@@ -1,5 +1,5 @@
 
-from utils import *
+from chem.utils import *
 
 
 class Molecules:
