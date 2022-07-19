@@ -3,7 +3,7 @@ setup.cfg
 chem/__pycache__/
 chem/main.py
 LigPrep/__pycache__/
-notebooks/
+/notebooks/
 best_docking.sdf
 out.txt
 processFile.py
