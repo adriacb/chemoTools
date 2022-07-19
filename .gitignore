@@ -1,3 +1,11 @@
 skip/
 gitPush.sh
 __pycache__
+setup.cfg
+chem/__pycache__
+chem/main.py
+best_docking.sdf
+out.txt
+processFile.py
+RMSD_test.py
+.gitignore
