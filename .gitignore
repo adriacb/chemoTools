@@ -1,6 +1,6 @@
-__pycache__
+__pycache__/
 setup.cfg
-chem/__pycache__
+chem/__pycache__/
 chem/main.py
 best_docking.sdf
 out.txt
