@@ -286,74 +286,75 @@ def main():
     print(cs, end='\n\n')
 
     coords, model, scaler = cs.PCA(nComponents=2)
-    results = cs.to_df()
+    results = cs.to_df2()
     print(results.head())
+    print(results.shape)
 
-    scaled_region = scaler.transform(ms_region.properties)
-    region_coords = model.transform(scaled_region)
+    # scaled_region = scaler.transform(ms_region.properties)
+    # region_coords = model.transform(scaled_region)
 
-    dfcopy = results[results.setName != ms_region.setName]
+    # dfcopy = results[results.setName != ms_region.setName]
 
-    # IPTACOPAN distance
-    ipta = results[results.setName == 'Iptacopan']
-    d = compute_distance(ipta[['PC1', 'PC2']].to_numpy(), region_coords)
-    print(d)
+    # # IPTACOPAN distance
+    # ipta = results[results.setName == 'Iptacopan']
+    # d = compute_distance(ipta[['PC1', 'PC2']].to_numpy(), region_coords)
+    # print(d)
     
 
-    for set in dfcopy['setName'].unique():
-        print(f"Current set: {set}")
-        curr_group = dfcopy[dfcopy.setName == set]
+    # for set in dfcopy['setName'].unique():
+    #     print(f"Current set: {set}")
+    #     curr_group = dfcopy[dfcopy.setName == set]
 
-        # Calculate the Euclidean distance between each molecule in the chemspace using compute_distance
-        distances = compute_distance(curr_group[['PC1', 'PC2']].to_numpy(), region_coords)
-        results.loc[results.setName == set, 'EuclDist'] = distances
+    #     # Calculate the Euclidean distance between each molecule in the chemspace using compute_distance
+    #     distances = compute_distance(curr_group[['PC1', 'PC2']].to_numpy(), region_coords)
+    #     results.loc[results.setName == set, 'EuclDist'] = distances
 
-    # Plot the distances between the all molecules in the chemspace
-    # and the "target" region of the chemspace.
-    #plot_distances(results, ref_region=ms_region.setName) #filename='/chemotargets/research/SITALA/IPTACOPAN/PCA_Analysis/Distances/distances.png')
-    fig, ax = plt.subplots(1,1, figsize=(10, 6))
-    plt.grid()
+    # # Plot the distances between the all molecules in the chemspace
+    # # and the "target" region of the chemspace.
+    # #plot_distances(results, ref_region=ms_region.setName) #filename='/chemotargets/research/SITALA/IPTACOPAN/PCA_Analysis/Distances/distances.png')
+    # fig, ax = plt.subplots(1,1, figsize=(10, 6))
+    # plt.grid()
 
-    ax1 = ax.scatter(x=region_coords[:,0], y=region_coords[:,1], marker='o', s=125, color="whitesmoke", alpha=1)
-    ax2 = ax.scatter(data=results, x='PC1', y='PC2', marker='+', c=results['EuclDist'], cmap='plasma')
-    ax3 = plt.scatter(data=results[results.setName == "Iptacopan"],
-                    x='PC1',
-                    y='PC2',
-                    marker='X',
-                    s=223)
+    # ax1 = ax.scatter(x=region_coords[:,0], y=region_coords[:,1], marker='o', s=125, color="whitesmoke", alpha=1)
+    # ax2 = ax.scatter(data=results, x='PC1', y='PC2', marker='+', c=results['EuclDist'], cmap='plasma')
+    # ax3 = plt.scatter(data=results[results.setName == "Iptacopan"],
+    #                 x='PC1',
+    #                 y='PC2',
+    #                 marker='X',
+    #                 s=223)
 
-    cbar = fig.colorbar(ax2, ax=ax)
-    cbar.set_label('Euclidean Distance')
+    # cbar = fig.colorbar(ax2, ax=ax)
+    # cbar.set_label('Euclidean Distance')
 
-    ax.set_xlabel("PC1")
-    ax.set_ylabel("PC2")
+    # ax.set_xlabel("PC1")
+    # ax.set_ylabel("PC2")
     
-    # LEGEND
-    patch1 = mpatches.Patch(color='whitesmoke', label='Target Chemical Space')
+    # # LEGEND
+    # patch1 = mpatches.Patch(color='whitesmoke', label='Target Chemical Space')
 
-    ipt = mlines.Line2D([], [], color='indigo', marker='X', linestyle='None',
-                            markersize=10, label='Iptacopan', markeredgewidth=4)
+    # ipt = mlines.Line2D([], [], color='indigo', marker='X', linestyle='None',
+    #                         markersize=10, label='Iptacopan', markeredgewidth=4)
 
-    plt.legend(handles=[patch1, ipt], frameon=False, loc='upper left')
-    plt.tight_layout()
+    # plt.legend(handles=[patch1, ipt], frameon=False, loc='upper left')
+    # plt.tight_layout()
 
-    plt.show()
-    print(results.pivot(columns='setName', values='EuclDist'))
-    # Histogram of distances by set name
-    ax = results.pivot(columns='setName', values='EuclDist').plot(kind='hist', 
-                              bins = 100, 
-                              figsize=(12,8),
-                              alpha = 0.6, grid=True)
+    # plt.show()
+    # print(results.pivot(columns='setName', values='EuclDist'))
+    # # Histogram of distances by set name
+    # ax = results.pivot(columns='setName', values='EuclDist').plot(kind='hist', 
+    #                           bins = 100, 
+    #                           figsize=(12,8),
+    #                           alpha = 0.6, grid=True)
     
-    vline = ax.vlines(x = d[0], ymin = 0, ymax = 80,
-            colors = 'black',
-            label = 'Iptacopan')
-    ax.set_xlabel("Euclidean Distances")
-    leg1 = ax.legend(['CFB', 'In Space', 'Iptacopan', 'Iptacopan scaffold'], loc='upper right')
-    leg2 = ax.legend(handles=[vline], loc='lower right')
-    ax.add_artist(leg1)
+    # vline = ax.vlines(x = d[0], ymin = 0, ymax = 80,
+    #         colors = 'black',
+    #         label = 'Iptacopan')
+    # ax.set_xlabel("Euclidean Distances")
+    # leg1 = ax.legend(['CFB', 'In Space', 'Iptacopan', 'Iptacopan scaffold'], loc='upper right')
+    # leg2 = ax.legend(handles=[vline], loc='lower right')
+    # ax.add_artist(leg1)
 
-    plt.show()
+    # plt.show()
 
 
 if __name__ == "__main__":

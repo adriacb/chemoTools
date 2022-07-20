@@ -145,7 +145,6 @@ class ChemSpace:
         
         self.nComponents = nComponents if nComponents is not None else self.num_properties
         
-
         if model in ('PCA'):
             if scaler is None:
                 #Standardize data
@@ -184,39 +183,20 @@ class ChemSpace:
     def __str__(self):
         
         return "<ChemSpace> object with {} sets of molecules.\nChemSpace dimensions: {}".format(len(self.hash_space.keys()), self.properties.shape)
-    
 
     def to_df(self):
         """
         Convert the ChemSpace object to a pandas.DataFrame.
+        It uses the to_df() method of Molecule objects to create the DataFrame.
         """
         assert self.coordinates is not None, "PCA or TSNE coordinates must be computed first."
 
-        # Dataframe to store PCA coordinates
-        df = pd.DataFrame(self.coordinates, columns=['PC'+str(i+1) for i in range(self.nComponents)])
-        # Names of the sets
-        names = [x.setName for x in self.hash_space.values()]
-        # Number of molecules in each set
-        num_mol_by_set = [x.properties.shape[0] for x in self.hash_space.values()]
-        # Add the set names and number of molecules to the dataframe
-        listnames = []
-
-        for i, name in enumerate(names):
-            for j in range(num_mol_by_set[i]):
-                listnames.append(name)
-        
-        df['setName'] = listnames
-        
-
-        # Add the properties to the dataframe
-        for i in range(self.nComponents):
-            # each column is a Pcomponent
-            df['PC'+str(i+1)] = self.coordinates[:,i] # Column i is the Pcomponent
-
+        dfs = list()
+        for Ms in self.hash_space.values():
+            dfs.append(Ms.to_df())
+        df = pd.concat(dfs, ignore_index=True)
         self.dataframe = df
-        
-        return self.dataframe
-    
+        return df    
 
     def to_sdf(self, filename, molCol='ROMol', propsCols=None):
         """

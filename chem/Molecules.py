@@ -52,26 +52,28 @@ class Molecules:
         Returns:
             Pandas DataFrame
         """
-        columns = ["ID", "Molecule", "logP", "MWt", "nHBD", "NumAromaticRings", "PFI"]
+        columns = ["ID", "ROMol", "setName", "logP", "MWt", "nHBD", "NumAromaticRings", "PFI"]
         # Add the coordinates if they are available
         if self.coordinates is not None:
             for i in range(self.coordinates.shape[1]):
-                columns.append("PC" + str(i))
+                columns.append("PC" + str(i+1))
 
         df = pd.DataFrame(columns=columns)
         # Add the properties
-        df["ID"] = [str(i) for i in range(self.num_molecules)]
-        df["Molecule"] = self.molecules
+        df["ID"] = [str(i)+"_"+self.setName for i in range(1, self.num_molecules+1)]
+        df["ROMol"] = self.molecules
+        df["setName"] = [self.setName for i in range(self.num_molecules)]
         df["logP"] = self.properties[:, 0]
         df["MWt"] = self.properties[:, 1]
         df["nHBD"] = self.properties[:, 2]
         df["NumAromaticRings"] = self.properties[:, 3]
         df["PFI"] = self.properties[:, 4]
 
+
         # Add the coordinates if they are available
         if self.coordinates is not None:
             for i in range(self.coordinates.shape[1]):
-                df["PC" + str(i)] = self.coordinates[:, i]
+                df["PC" + str(i+1)] = self.coordinates[:, i]
 
         return df
     
@@ -86,7 +88,10 @@ class Molecules:
         if path is None:
             path = os.getcwd()
         
-        Chem.PandasTools.WriteSDF(self.to_df(), path + "/" + self.setName + ".sdf")
+        dataframe = self.to_df()
+        
+        Chem.PandasTools.WriteSDF(df= dataframe, out = path + "/" + self.setName + ".sdf", 
+                                  molColName='ROMol', properties=list(dataframe.columns))
         print("SDF file saved in {}/{}.sdf".format(path, self.setName))
         
         
