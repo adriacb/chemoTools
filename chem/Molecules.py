@@ -28,7 +28,7 @@ class Molecules:
             mwt = Descriptors.MolWt(mol)
             nhbd = Descriptors.NumHDonors(mol)
             nar = Chem.Lipinski.NumAromaticRings(mol)
-            pfi = Descriptors.MolLogP(mol) + Chem.Lipinski.NumAromaticRings(mol)
+            pfi = logp + nar
             ps = np.asarray([logp, mwt, nhbd, nar, pfi])
 
             mol.SetProp("MWt", str(mwt))
@@ -44,6 +44,53 @@ class Molecules:
                 properties.append(ps)
 
         return np.array([x for x in properties])
+    
+    def to_df(self):
+        """
+        Convert the Molecules object into a Pandas DataFrame
+        ----------
+        Returns:
+            Pandas DataFrame
+        """
+        columns = ["ID", "Molecule", "logP", "MWt", "nHBD", "NumAromaticRings", "PFI"]
+        # Add the coordinates if they are available
+        if self.coordinates is not None:
+            for i in range(self.coordinates.shape[1]):
+                columns.append("PC" + str(i))
+
+        df = pd.DataFrame(columns=columns)
+        # Add the properties
+        df["ID"] = [str(i) for i in range(self.num_molecules)]
+        df["Molecule"] = self.molecules
+        df["logP"] = self.properties[:, 0]
+        df["MWt"] = self.properties[:, 1]
+        df["nHBD"] = self.properties[:, 2]
+        df["NumAromaticRings"] = self.properties[:, 3]
+        df["PFI"] = self.properties[:, 4]
+
+        # Add the coordinates if they are available
+        if self.coordinates is not None:
+            for i in range(self.coordinates.shape[1]):
+                df["PC" + str(i)] = self.coordinates[:, i]
+
+        return df
+    
+
+    def to_sdf(self, path=None):
+        """
+        Convert the Molecules to sdf file.
+        ----------
+        path: str, optional
+            The path to save the sdf file. If not provided, the file will be saved in the current directory.
+        """
+        if path is None:
+            path = os.getcwd()
+        
+        Chem.PandasTools.WriteSDF(self.to_df(), path + "/" + self.setName + ".sdf")
+        print("SDF file saved in {}/{}.sdf".format(path, self.setName))
+        
+        
+
 
     def __add__(self):
         """
