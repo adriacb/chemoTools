@@ -7,7 +7,7 @@ class Combine:
     """
 
     def __init__(self, ref: Chem.rdchem.Mol, frag: Chem.rdchem.Mol,
-                 i_ref: int):
+                 i_ref: int, i_frag: int = None):
         """
         Initialize the class.
 
@@ -20,7 +20,7 @@ class Combine:
         i_ref : int
             index of the nearest atom in the reference molecule.
         i_frag : int
-            index of the nearest atom in the fragment molecule.
+            index of the nearest atom in the fragment molecule. (None if not provided)
         """
         self.ref = ref
         self.frag = frag
@@ -28,6 +28,7 @@ class Combine:
         self.i_frag = None
         self.ats_ref, self.coor_ref = self._coords_atoms(ref)
         self.ats_frag, self.coor_frag = self._coords_atoms(frag)
+
 
         self.molecule = self._pipeline()
         
@@ -142,9 +143,9 @@ class Combine:
             rdkit molecule containing the combined molecules.
         """
 
-
-        # Find the nearest coordinate in the reference region to a coordinate in the fragment region
-        i_ref, coor_ref, self.i_frag, coor_frag = self._find_nearest_coord()
+        if self.ats_frag is None:
+            # Find the nearest coordinate in the reference region to a coordinate in the fragment region
+            i_ref, coor_ref, self.i_frag, coor_frag = self._find_nearest_coord()
 
         try:
             # Create a combined molecule
