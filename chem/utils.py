@@ -4,6 +4,7 @@ import pickle
 import uuid
 import time
 
+from typing import Tuple, Union
 
 import pandas as pd
 import numpy as np
@@ -46,8 +47,9 @@ def compute_distance(space_ref: np.array, space_target: np.array) -> float:
 
 def plot_distances(df: pd.DataFrame, ref_region: str=None, filename: str=None):
     """
-    Plot the distances between the all molecules in the chemspace
+    Plot the distances between the molecules in the chemspace
     and the "target" region of the chemspace.
+
     Parameters
     ----------
         df : pd.DataFrame
@@ -118,3 +120,102 @@ def plot_explained_variance(pca, dims):
     plt.ylabel('Explained variance ratio')
     plt.xlabel('Principal Components')
     plt.show()
+
+
+def coords_atoms(mol: Chem.rdchem.Mol) -> Tuple[list, np.array]:
+    """
+    Compute the coordinates of the atoms in a molecule.
+
+    Parameters
+    ----------
+    mol : Chem.rdchem.Mol
+        rdkit molecule.
+
+    Returns
+    -------
+    list
+        list of atom coordinates.
+    np.array
+        numpy array containing the coordinates of the atoms.
+    """
+
+
+    atoms_ = []
+    coords_ = []
+    conf = mol.GetConformer()
+    for i, atom in enumerate(mol.GetAtoms()):
+        positions = conf.GetAtomPosition(i) # Get the coordinates of the atom
+        atoms_.append(atom) # append atom object
+        coords_.append(np.array((positions.x, positions.y, positions.z))) # append coordinates
+
+    coords_ = np.vstack([x for x in coords_]) # stack coordinates
+    
+    return atoms_, coords_
+
+def find_nearest_coord(frag_coords: np.array, ref_coords: np.array) -> Tuple[int, np.array, int, np.array]:
+    """
+    Find the nearest coordinate in the reference region to a coordinate in the fragment region.
+
+    Parameters
+    ----------
+    frag_coords : np.array
+        numpy array containing the coordinates of the fragment region.
+    ref_coords : np.array
+        numpy array containing the coordinates of the reference region.
+    
+    Returns
+    -------
+    int
+        index of the nearest coordinate in the reference region.
+    np.array
+        numpy array containing the coordinates of the nearest coordinate in the reference region.
+    int
+        index of the nearest coordinate in the fragment region.
+    np.array
+        numpy array containing the coordinates of the nearest coordinate in the fragment region.
+    """
+
+
+    distance_matrix = distance.cdist(ref_coords, frag_coords, 'euclidean')
+    frag_dist = distance_matrix.min(axis=0)
+    ref_dist = distance_matrix.min(axis=1)
+    
+    # Index of "ith" element of frag_coords having min distance
+    index1 = np.where(frag_dist == np.amin(frag_dist))
+    # Index of "ith" element of ref_coords having min distance
+    index2 = np.where(ref_dist == np.amin(ref_dist))
+    
+    return index2[0][0], ref_coords[index2[0][0]], \
+           index1[0][0], frag_coords[index1[0][0]]
+
+
+def combine(ref: Chem.rdchem.Mol, frag: Chem.rdchem.Mol, i: int, j: int) -> Chem.rdchem.Mol:
+    """
+    Combine two molecules by adding the fragment to the reference region using the indeces of the nearest atom.
+
+    Parameters
+    ----------
+    ref : Chem.rdchem.Mol
+        rdkit reference molecule.
+    frag : Chem.rdchem.Mol
+        rdkit fragment molecule.
+    
+    Returns
+    -------
+    Chem.rdchem.Mol
+        rdkit molecule containing the combined molecules.
+    """
+    # Create a combined molecule
+    combo = Chem.CombineMols(ref, frag)
+    emol = Chem.EditableMol(combo)
+
+    # num will be the index of the last atom in the reference region
+    num = ref.GetNumAtoms()
+
+    # Add a single bond between the two atoms using the indeces of the nearest atom
+    emol.AddBond(i,num+j, order=Chem.rdchem.BondType.SINGLE)
+
+    # Convert the combined molecule to a rdkit molecule
+    mol = emol.GetMol()
+    Chem.SanitizeMol(mol)
+    return mol
