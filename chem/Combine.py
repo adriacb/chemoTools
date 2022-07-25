@@ -2,11 +2,12 @@ from .utils import *
 
 class Combine:
     """
-    Combines two molecules.
+    Combines two molecules, adding the fragment to the reference region using the indeces of the nearest atom.
+    It returns the combined molecule as Chem.rdchem.Mol.
     """
 
     def __init__(self, ref: Chem.rdchem.Mol, frag: Chem.rdchem.Mol,
-                 i_ref: int, i_frag: int):
+                 i_ref: int):
         """
         Initialize the class.
 
@@ -24,11 +25,12 @@ class Combine:
         self.ref = ref
         self.frag = frag
         self.i_ref = i_ref
-        self.i_frag = i_frag
+        self.i_frag = None
         self.ats_ref, self.coor_ref = self._coords_atoms(ref)
         self.ats_frag, self.coor_frag = self._coords_atoms(frag)
 
         self.molecule = self._pipeline()
+        
 
     def _combine(self, i: int, j: int) -> Chem.rdchem.Mol:
         """
@@ -142,13 +144,14 @@ class Combine:
 
 
         # Find the nearest coordinate in the reference region to a coordinate in the fragment region
-        i_ref, coor_ref, i_frag, coor_frag = self._find_nearest_coord()
+        i_ref, coor_ref, self.i_frag, coor_frag = self._find_nearest_coord()
 
         try:
             # Create a combined molecule
-            combo = self._combine(int(i_ref), int(i_frag))
+            combo = self._combine(int(i_ref), int(self.i_frag))
         except:
             print("Error: Could not combine molecules.")
             return None
         
         return combo
+    
